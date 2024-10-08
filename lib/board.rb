@@ -1,6 +1,7 @@
-require_relative 'piece'
+require_relative 'piece', 'possible_moves'
 
 class Board
+  include PossibleMoves
   attr_accessor :current_state
 
   def initialize

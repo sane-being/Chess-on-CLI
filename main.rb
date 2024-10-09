@@ -1,4 +1,4 @@
 require_relative 'lib/board'
 
 chess_game1 = Board.new
-chess_game1.pretty_print
+chess_game1.play

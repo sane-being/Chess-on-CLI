@@ -10,13 +10,20 @@ class Board
     @moves_a = []
   end
 
-  def turn
+  def play
     loop do
+      pretty_print
       puts "move of #{turn_of}"
       move = gets
-      next unless is_move_valid?(move)
-
-      @turn_of = @turn_of == :white ? :black : :white # toggle turn
+      move_a = decode_move(move)
+      if is_move_valid?(move_a)
+        move_a in [piece, square_from, square_to]
+        @board_h[square_from] = nil
+        @board_h[square_to] = piece
+        @turn_of = @turn_of == :white ? :black : :white # toggle turn
+      else
+        puts 'Invalid input!'
+      end
     end
   end
 
@@ -27,10 +34,6 @@ class Board
       puts "   #{square[1]}" if square[0] == 8
     end
     puts "\na b c d e f g h"
-  end
-
-  def to_s
-    "#{@board_h}"
   end
 
   private
@@ -59,8 +62,19 @@ class Board
     new_board # returning board
   end
 
-  def is_move_valid?(move)
-    decode_move(move) in [piece, square_from, square_to]
+  def decode_move(move)
+    move = move.split('')
+    square_from, square_to = move[0..1], move[2..3] # rubocop:disable Style/ParallelAssignment
+    [square_from, square_to].each do |square|
+      square[0] = square[0].ord - 96
+      square[1] = square[1].to_i
+    end
+    # [piece, square_from, square_to]
+    [@board_h[square_from], square_from, square_to]
+  end
+
+  def is_move_valid?(move_a)
+    move_a in [piece, square_from, square_to]
 
     return false unless (square_from + square_to).flatten.all?(1..8) # Valid squares
     return false if square_from == square_to # Moving to same square
@@ -69,7 +83,8 @@ class Board
     kill = killing?(square_to)
     return false if kill.nil? # square_to is occupied by players own piece
 
-    move_a = [piece, square_from, kill, square_to, check]
+    move_a.insert(2, kill)
+    move_a.push('check')
 
     case piece.abbr
     when :K then moved_as_king?(move_a)
@@ -79,17 +94,6 @@ class Board
     when :B then moved_as_bishop?(move_a)
     when :"" then moved_as_pawn?(move_a)
     end
-  end
-
-  def decode_move(move)
-    move = move.split
-    square_from, square_to = move[0..1], move[2..3] # rubocop:disable Style/ParallelAssignment
-    [square_from, square_to].each do |square|
-      square[0] = square[0].ord - 96
-      square[1] = square[1].to_i
-    end
-    # [piece, square_from, square_to]
-    [@board_h[square_from], square_from, square_to]
   end
 
   def killing?(square_to)

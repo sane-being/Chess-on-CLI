@@ -11,19 +11,20 @@ module ValidMoves
   end
 
   def moved_as_rook?(square_from, square_to)
-    if square_from[0] == square_to[0] # moving vertically
-      [square_from, square_to] in [[col, row_f], [*, row_t]]
-      # range = row_f < row_t ? (row_f..row_t) : (row_t..row_f)
-      range = (row_f..row_t) || (row_t..row_f)
-      squares_btw = range.map { |row| [col, row] }
-    elsif square_from[1] == square_to[1] # moving horizontally
-      [square_from, square_to] in [[col_f, row], [col_t, *]]
-      # range = col_f < col_t ? (col_f..col_t) : (col_t..col_f)
-      range = (col_f..col_t) || (col_t..col_f)
-      squares_btw = range.map { |col| [col, row] }
-    else # not moving in a line
+    [square_from, square_to] in [[col_f, row_f], [col_t, row_t]]
+
+    if col_f == col_t # moving vertically
+      col = col_f
+      rows_a = (row_f..row_t) || (row_t..row_f)
+      squares_btw = rows_a.map { |row| [col, row] }
+    elsif row_f == row_t # moving horizontally
+      row = row_f
+      cols_a = (col_f..col_t) || (col_t..col_f)
+      squares_btw = cols_a.map { |col| [col, row] }
+    else # not moving in a straight line
       return false
     end
+
     squares_btw -= (square_from + square_to)
     squares_btw.all? { |square| @board_h[square].nil? }
   end
@@ -40,18 +41,37 @@ module ValidMoves
     squares_btw.all? { |square| @board_h[square].nil? }
   end
 
+  def moved_as_knight?(square_from, square_to)
+    [square_from, square_to] in [[col_f, row_f], [col_t, row_t]]
+
+    condition = [(col_t - col_f).abs, (row_t - row_f).abs]
+    condition.one?(1) && condition.one?(2)
+  end
+
   def moved_as_pawn?(square_from, square_to, kill, color)
     [square_from, square_to] in [[col_f, row_f], [col_t, row_t]]
+
+    return false if color == :black && (row_f < row_t)  # black pawn moving upwards
+    return false if color == :white && (row_f > row_t)  # white pawn moving downwards
+    # if killing, checking whether pawn is moving one square cross or not
     return ((col_f - col_t).abs == 1) && ((row_f - row_t).abs == 1) if kill
-    return false if col_f != col_t
-    return false if color == :black && (row_f < row_t)
-    return false if color == :white && (row_f > row_t)
+    return false if col_f != col_t # not moving in a column
 
     case (row_t - row_f).abs
-    when 2 then [2, 7].any?(row_f)
-    when 1 then true
-    else        false
+    when 2 # pawn making move of 2 squares
+      return false if [2, 7].none?(row_f) # pawn is not at its initial row
+
+      square_btw = color == :black ? [col_f, row_f - 1] : [col_f, row_f + 1]
+      return @board_h[square_btw].nil? # square between is empty # rubocop:disable Style/RedundantReturn
+    when 1 then true # pawn moving one step
+    else false
     end
+
+    # case (row_t - row_f).abs
+    # when 2 then [2, 7].any?(row_f) # pawn making first move of 2 squares
+    # when 1 then true               # pawn moving one step
+    # else        false
+    # end
   end
 end
 
@@ -90,9 +110,6 @@ class Board
     [piece, square_from, kill, square_to, check]
   end
 
-  def find_next_dest(piece)
-  end
-
   private
 
   def create_new_board
@@ -109,8 +126,8 @@ class Board
 
     # placing remaining pieces
     pieces_seq = %w[rook knight bishop queen king bishop knight rook]
-    pieces_seq.each_with_index do |piece, i|
-      col = i + 1
+    pieces_seq.each_with_index do |piece, col|
+      col += 1 # index starts from 0, but col starts from 1
       new_board[[col, 1]] = Piece.new(piece, :white)
       new_board[[col, 8]] = Piece.new(piece, :black)
     end

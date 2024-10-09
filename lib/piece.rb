@@ -8,24 +8,48 @@ module PiecesSet
     'pawn' => :""
   }.freeze
 
+  WHITE_SYMBOLS = {
+    K: 0x2654,
+    Q: 0x2655,
+    R: 0x2656,
+    N: 0x2658,
+    B: 0x2657,
+    "": 0x2659
+  }
+
+  BLACK_SYMBOLS = {
+    K: 0x265A,
+    Q: 0x265B,
+    R: 0x265C,
+    N: 0x265E,
+    B: 0x265D,
+    "": 0x265F
+  }
+
   COLORS = %i[white black].freeze
 
   def abbreviate(name)
     ABBREVIATIONS[name]
   end
+
+  def make_symbols(abbr, color)
+    symbols_h = color == :white ? WHITE_SYMBOLS : BLACK_SYMBOLS
+    symbols_h[abbr].chr(Encoding::UTF_8)
+  end
 end
 
 class Piece
   include PiecesSet
-  attr_accessor :name, :abbr, :color, :pos
+  attr_accessor :name, :abbr, :color
 
-  def initialize(name, color, pos)
+  def initialize(name, color)
     @name = name
     @abbr = abbreviate(name)
     @color = color
+    @symbol = make_symbols(abbr, color)
   end
 
   def to_s
-    "#{color} #{name}"
+    @symbol
   end
 end

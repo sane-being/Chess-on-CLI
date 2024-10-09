@@ -1,7 +1,6 @@
 require_relative 'piece'
 
 class Board
-  include ValidMoves
   attr_accessor :board_h, :turn_of
 
   def initialize
@@ -13,32 +12,11 @@ class Board
 
   def turn
     loop do
+      puts "move of #{turn_of}"
       move = gets
       next unless is_move_valid?(move)
 
       @turn_of = @turn_of == :white ? :black : :white # toggle turn
-    end
-  end
-
-  def is_move_valid?(move)
-    decode_move(move) in [piece, square_from, square_to]
-
-    return false unless (square_from + square_to).flatten.all?(1..8) # Valid squares
-    return false if square_from == square_to # Moving to same square
-    return false if piece.color != turn_of # Player not moving his own piece
-
-    kill = killing?(square_to)
-    return false if kill.nil? # square_to is occupied by players own piece
-
-    move_a = [piece, square_from, kill, square_to, check]
-
-    case piece.abbr
-    when :K then moved_as_king?(move_a)
-    when :Q then moved_as_rook?(move_a) || moved_as_bishop?(move_a)
-    when :R then moved_as_rook?(move_a)
-    when :N then moved_as_knight?(move_a)
-    when :B then moved_as_bishop?(move_a)
-    when :"" then moved_as_pawn?(move_a)
     end
   end
 
@@ -65,6 +43,28 @@ class Board
     end
 
     new_board # returning board
+  end
+
+  def is_move_valid?(move)
+    decode_move(move) in [piece, square_from, square_to]
+
+    return false unless (square_from + square_to).flatten.all?(1..8) # Valid squares
+    return false if square_from == square_to # Moving to same square
+    return false if piece.color != turn_of # Player not moving his own piece
+
+    kill = killing?(square_to)
+    return false if kill.nil? # square_to is occupied by players own piece
+
+    move_a = [piece, square_from, kill, square_to, check]
+
+    case piece.abbr
+    when :K then moved_as_king?(move_a)
+    when :Q then moved_as_rook?(move_a) || moved_as_bishop?(move_a)
+    when :R then moved_as_rook?(move_a)
+    when :N then moved_as_knight?(move_a)
+    when :B then moved_as_bishop?(move_a)
+    when :"" then moved_as_pawn?(move_a)
+    end
   end
 
   def decode_move(move)

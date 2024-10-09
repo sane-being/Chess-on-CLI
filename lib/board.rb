@@ -1,6 +1,38 @@
 require_relative 'piece'
 
+module ValidMoves
+  def moved_as_rook?(square_from, square_to)
+    if square_from[0] == square_to[0]
+      [square_from, square_to] in [[col, row_f], [*, row_t]]
+      # range = row_f < row_t ? (row_f..row_t) : (row_t..row_f)
+      range = (row_f..row_t) || (row_t..row_f)
+      squares_btw = range.map { |row| [col, row] }
+    elsif square_from[1] == square_to[1]
+      [square_from, square_to] in [[col_f, row], [col_t, *]]
+      # range = col_f < col_t ? (col_f..col_t) : (col_t..col_f)
+      range = (col_f..col_t) || (col_t..col_f)
+      squares_btw = range.map { |col| [col, row] }
+    else
+      return false
+    end
+    squares_btw -= (square_from + square_to)
+    squares_btw.all? { |square| @board_h[square].nil? }
+  end
+
+  def moved_as_bishop?(square_from, square_to)
+    [square_from, square_to] in [[col_f, row_f], [col_t, row_t]]
+    return false if (row_t - row_f).abs != (col_t - col_f).abs
+
+    rows_a = (row_f..row_t).to_a || (row_t..row_f).to_a.reverse
+    cols_a = (col_f..col_t).to_a || (col_t..col_f).to_a.reverse
+    squares_btw = cols_a.zip(rows_a)
+    squares_btw -= (square_from + square_to)
+    squares_btw.all? { |square| @board_h[square].nil? }
+  end
+end
+
 class Board
+  include ValidMoves
   attr_accessor :board_h, :turn_of
 
   def initialize
@@ -13,8 +45,7 @@ class Board
   def play
     move = gets
     decode_move(move) in [square_from, square_to]
-    move = make_move(square_from, square_to)
-    @moves_a.push(move)
+    @moves_a = make_move(square_from, square_to)
     turn_of = turn_of == :white ? :black : :white
   end
 
@@ -33,6 +64,9 @@ class Board
     dying_piece = @board_h[square_to]
     kill = dying_piece && dying_piece.color != turn_of ? true : false
     [piece, square_from, kill, square_to, check]
+  end
+
+  def find_next_dest(piece)
   end
 
   private

@@ -17,9 +17,9 @@ end
 
 class Piece
   include PiecesSet
-  attr_accessor :name, :abbr, :color
+  attr_accessor :name, :abbr, :color, :pos
 
-  def initialize(name, color)
+  def initialize(name, color, pos)
     @name = name
     @abbr = abbreviate(name)
     @color = color

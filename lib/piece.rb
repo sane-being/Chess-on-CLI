@@ -40,12 +40,12 @@ end
 
 class Piece
   include PiecesSet
-  attr_accessor :name, :abbr, :color
+  attr_accessor :name, :abbr, :color, :symbol
 
   def initialize(name, color)
     @name = name
-    @abbr = abbreviate(name)
     @color = color
+    @abbr = abbreviate(name)
     @symbol = make_symbols(abbr, color)
   end
 

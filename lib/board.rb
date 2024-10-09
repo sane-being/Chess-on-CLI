@@ -20,11 +20,25 @@ class Board
     end
   end
 
+  def pretty_print
+    @board_h.each do |square, piece|
+      print piece ? piece.symbol : '_'
+      print ' '
+      puts "   #{square[1]}" if square[0] == 8
+    end
+    puts "\na b c d e f g h"
+  end
+
+  def to_s
+    "#{@board_h}"
+  end
+
   private
 
   def create_new_board
     ## Array of 64 squares: [1,1] to [8,8]
-    new_board = (1..8).to_a.product((1..8).to_a)
+    new_board = []
+    (1..8).to_a.reverse.each { |row| new_board += (1..8).to_a.product([row]) }
     # creating empty Board hash,
     new_board = new_board.to_h { |square| [square, nil] }
 
@@ -150,9 +164,5 @@ class Board
     when 1 then true # pawn moving one step
     else false
     end
-  end
-
-  def to_s
-    board_h
   end
 end

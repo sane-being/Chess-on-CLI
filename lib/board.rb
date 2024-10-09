@@ -1,18 +1,27 @@
 require_relative 'piece'
 
 module ValidMoves
+  def moved_as_king?(square_from, square_to)
+    [square_from, square_to] in [[col_f, row_f], [col_t, row_t]]
+    ((col_f - col_t).abs <= 1) && ((row_f - row_t).abs <= 1)
+  end
+
+  def moved_as_queen?(square_from, square_to)
+    moved_as_rook?(square_from, square_to) || moved_as_bishop?(square_from, square_to)
+  end
+
   def moved_as_rook?(square_from, square_to)
-    if square_from[0] == square_to[0]
+    if square_from[0] == square_to[0] # moving vertically
       [square_from, square_to] in [[col, row_f], [*, row_t]]
       # range = row_f < row_t ? (row_f..row_t) : (row_t..row_f)
       range = (row_f..row_t) || (row_t..row_f)
       squares_btw = range.map { |row| [col, row] }
-    elsif square_from[1] == square_to[1]
+    elsif square_from[1] == square_to[1] # moving horizontally
       [square_from, square_to] in [[col_f, row], [col_t, *]]
       # range = col_f < col_t ? (col_f..col_t) : (col_t..col_f)
       range = (col_f..col_t) || (col_t..col_f)
       squares_btw = range.map { |col| [col, row] }
-    else
+    else # not moving in a line
       return false
     end
     squares_btw -= (square_from + square_to)
@@ -21,13 +30,28 @@ module ValidMoves
 
   def moved_as_bishop?(square_from, square_to)
     [square_from, square_to] in [[col_f, row_f], [col_t, row_t]]
-    return false if (row_t - row_f).abs != (col_t - col_f).abs
+    return false if (row_t - row_f).abs != (col_t - col_f).abs # not moving cross
 
     rows_a = (row_f..row_t).to_a || (row_t..row_f).to_a.reverse
     cols_a = (col_f..col_t).to_a || (col_t..col_f).to_a.reverse
     squares_btw = cols_a.zip(rows_a)
+
     squares_btw -= (square_from + square_to)
     squares_btw.all? { |square| @board_h[square].nil? }
+  end
+
+  def moved_as_pawn?(square_from, square_to, kill, color)
+    [square_from, square_to] in [[col_f, row_f], [col_t, row_t]]
+    return ((col_f - col_t).abs == 1) && ((row_f - row_t).abs == 1) if kill
+    return false if col_f != col_t
+    return false if color == :black && (row_f < row_t)
+    return false if color == :white && (row_f > row_t)
+
+    case (row_t - row_f).abs
+    when 2 then [2, 7].any?(row_f)
+    when 1 then true
+    else        false
+    end
   end
 end
 

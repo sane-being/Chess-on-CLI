@@ -7,36 +7,46 @@ class Board
     # board hash of 64 squares, square => occupying piece ('' if empty)
     @board_h = create_new_board
     @turn_of = :white
-    @moves_a = []
+    # @moves_a = []
   end
 
   def play
     loop do
-      pretty_print
+      self.pretty_print # rubocop:disable Style/RedundantSelf
       puts "move of #{turn_of}"
       move = gets
       move_a = decode_move(move)
       if is_move_valid?(move_a)
-        move_a in [piece, square_from, square_to]
-        @board_h[square_from] = nil
-        @board_h[square_to] = piece
-        @turn_of = @turn_of == :white ? :black : :white # toggle turn
+        move_piece(move_a)
+        toggle_turn
       else
         puts 'Invalid input!'
       end
     end
   end
 
+  def move_piece(move_a)
+    move_a in [piece, square_from, square_to]
+    @board_h[square_from] = nil
+    @board_h[square_to] = piece
+  end
+
+  def toggle_turn
+    @turn_of = case @turn_of
+               when :white then :black
+               when :black then :white
+               end
+  end
+
   def pretty_print
-    @board_h.each do |square, piece|
+    pp board_h
+    board_h.each do |square, piece|
       print piece ? piece.symbol : '_'
       print ' '
       puts "   #{square[1]}" if square[0] == 8
     end
     puts "\na b c d e f g h"
   end
-
-  private
 
   def create_new_board
     ## Array of 64 squares: [1,1] to [8,8]
@@ -85,6 +95,7 @@ class Board
 
     move_a.insert(2, kill)
     move_a.push('check')
+    # move_a = [Piece, square_from, kill, square_to, 'check']
 
     case piece.abbr
     when :K then moved_as_king?(move_a)

@@ -126,17 +126,17 @@ class Board
 
     if col_f == col_t # moving vertically
       col = col_f
-      rows_a = (row_f..row_t) || (row_t..row_f)
+      rows_a = (row_f..row_t).to_a + (row_t..row_f).to_a
       squares_btw = rows_a.map { |row| [col, row] }
     elsif row_f == row_t # moving horizontally
       row = row_f
-      cols_a = (col_f..col_t) || (col_t..col_f)
+      cols_a = (col_f..col_t).to_a + (col_t..col_f).to_a
       squares_btw = cols_a.map { |col| [col, row] }
     else # not moving in a straight line
       return false
     end
 
-    squares_btw -= ([col_f, row_f] + [col_t, row_t])
+    squares_btw -= [[col_f, row_f], [col_t, row_t]]
     squares_btw.all? { |square| @board_h[square].nil? }
   end
 
@@ -144,11 +144,11 @@ class Board
     move_a in [_, [col_f, row_f], _, [col_t, row_t], _]
     return false if (row_t - row_f).abs != (col_t - col_f).abs # not moving cross
 
-    rows_a = (row_f..row_t).to_a || (row_t..row_f).to_a.reverse
-    cols_a = (col_f..col_t).to_a || (col_t..col_f).to_a.reverse
+    rows_a = (row_f..row_t).to_a + (row_t..row_f).to_a.reverse
+    cols_a = (col_f..col_t).to_a + (col_t..col_f).to_a.reverse
     squares_btw = cols_a.zip(rows_a)
 
-    squares_btw -= ([col_f, row_f] + [col_t, row_t])
+    squares_btw -= [[col_f, row_f], [col_t, row_t]]
     squares_btw.all? { |square| @board_h[square].nil? }
   end
 

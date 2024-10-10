@@ -13,9 +13,8 @@ class Board
   def play
     loop do
       self.pretty_print # rubocop:disable Style/RedundantSelf
-      puts "move of #{turn_of}"
-      move = gets
-      move_a = decode_move(move)
+      print "move of #{turn_of}:"
+      move_a = decode_move(gets)
       if is_move_valid?(move_a)
         move_piece(move_a)
         toggle_turn
@@ -25,10 +24,20 @@ class Board
     end
   end
 
+  def pretty_print
+    puts ' '
+    board_h.each do |square, piece|
+      print piece ? piece.symbol : '_'
+      print ' '
+      puts "   #{square[1]}" if square[0] == 8
+    end
+    puts "\na b c d e f g h\n "
+  end
+
   def move_piece(move_a)
-    move_a in [piece, square_from, square_to]
-    @board_h[square_from] = nil
-    @board_h[square_to] = piece
+    move_a in [piece, square_from, _, square_to, _]
+    board_h.store(square_to, piece)
+    board_h.store(square_from, nil)
   end
 
   def toggle_turn
@@ -36,16 +45,6 @@ class Board
                when :white then :black
                when :black then :white
                end
-  end
-
-  def pretty_print
-    pp board_h
-    board_h.each do |square, piece|
-      print piece ? piece.symbol : '_'
-      print ' '
-      puts "   #{square[1]}" if square[0] == 8
-    end
-    puts "\na b c d e f g h"
   end
 
   def create_new_board

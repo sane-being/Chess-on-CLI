@@ -50,4 +50,7 @@ describe Board do
       end
     end
   end
+
+  describe '#play' do
+  end
 end

@@ -48,11 +48,14 @@ class Board
       square[1] = square[1].to_i
     end
     # [piece, square_from, square_to]
+    p square_to
     [@board_h[square_from], square_from, square_to]
   end
 
   def is_move_valid?(move_a)
-    move_a in [piece, _, square_to]
+    move_a in [piece, square_from, square_to]
+
+    return true if (piece.abbr == :"") && moving_as_pawn?(square_from, square_to, piece.color)
 
     pieces_h[piece].include? square_to
   end

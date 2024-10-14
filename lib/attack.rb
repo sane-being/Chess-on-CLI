@@ -24,6 +24,24 @@ module AttackSquare
     array
   end
 
+  def moving_as_pawn?(square_from, square_to, color)
+    [square_from, square_to] in [[col_f, row_f], [col_t, row_t]]
+
+    return false unless square_valid?([col_t, row_t]) &&
+                        col_f == col_t                &&
+                        square_empty?([col_t, row_t])
+
+    case (row_t - row_f).abs
+    when 2 # pawn making move of 2 squares
+      return false if [2, 7].none?(row_f) # pawn is not at its initial row
+
+      square_btw = color == :black ? [col_f, row_f - 1] : [col_f, row_f + 1]
+      @board_h[square_btw].nil? # square between is empty
+    when 1 then true # pawn moving one step
+    else        false
+    end
+  end
+
   def king_attacks(square, color)
     square in [col, row]
     col_a = ((col - 1)..(col + 1)).to_a

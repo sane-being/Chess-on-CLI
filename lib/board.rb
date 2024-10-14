@@ -41,14 +41,14 @@ class Board
   end
 
   def decode_move(move)
-    move = move.split('')
-    square_from, square_to = move[0..1], move[2..3] # rubocop:disable Style/ParallelAssignment
+    square_from = move[0..1].split('')
+    square_to = move[2..3].split('')
+
     [square_from, square_to].each do |square|
       square[0] = square[0].ord - 96
       square[1] = square[1].to_i
     end
     # [piece, square_from, kill, square_to, check]
-    p square_to
     [@board_h[square_from], square_from, nil, square_to, nil]
   end
 
@@ -88,11 +88,8 @@ class Board
     board_h.store(square_to, piece)
     board_h.store(square_from, nil)
 
-    pieces_h.each do |piece_upd, array|
-      next unless array.include?(square_from) ||
-                  array.include?(square_to)
-
-      pieces_hash.store(piece_upd, attacks(piece_upd))
+    pieces_h.each_key do |piece_upd|
+      pieces_h.store(piece_upd, attacks(piece_upd))
     end
   end
 

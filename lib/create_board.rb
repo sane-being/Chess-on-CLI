@@ -26,17 +26,13 @@ module CreateBoard
       pieces_a.push Piece.new(piece_name, :black, [col, 8])
     end
 
-    puts 'pieces created'
-
     pieces_hash = {}
 
     pieces_a.each do |piece|
       # placing pieces on the board (@board_h)
-      puts "#{piece.square}, #{piece}"
       @board_h.store(piece.square, piece)
       # finding squares that the piece can attack on the next move
       pieces_hash.store(piece, attacks(piece))
-      puts 'Seems ok'
     end
 
     pieces_hash

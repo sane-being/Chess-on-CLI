@@ -31,6 +31,9 @@ module AttackSquare
                         col_f == col_t                &&
                         square_empty?([col_t, row_t])
 
+    return false unless (color == :black && (row_f > row_t)) ||
+                        (color == :white && (row_f < row_t))
+
     case (row_t - row_f).abs
     when 2 # pawn making move of 2 squares
       return false if [2, 7].none?(row_f) # pawn is not at its initial row

@@ -72,11 +72,16 @@ class Board
       raise 'No piece present on selected square'
     elsif piece.color != turn_of
       raise "Plaese move your own piece (#{piece.color})"
-    elsif (piece.abbr == :"") &&
-          moving_as_pawn?(square_from, square_to, piece.color)
-      true
+    elsif piece.abbr == :""
+      return true if moving_as_pawn?(square_from, square_to, piece.color)
+      return true if pieces_h[piece].include?(square_to) &&
+                     !square_empty?(square_to)
+
+      raise 'Play as per rules!'
     elsif pieces_h[piece].include? square_to
       true
+    else
+      raise 'Play as per rules!'
     end
   end
 

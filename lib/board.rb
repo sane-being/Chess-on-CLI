@@ -1,6 +1,27 @@
 require_relative 'piece'
 
+module Square
+  def square_valid?(square_btw)
+    square_btw.all? { |num| (1..8).include?(num) }
+  end
+
+  def square_empty?(square_btw)
+    board_h[square_btw].nil?
+  end
+
+  def can_kill?(square_btw, color)
+    board_h[square_btw].color != color
+  end
+
+  def attack_square?(square_btw, color)
+    c1 = square_valid?(square_btw)
+    c2 = square_empty?(square_btw) || can_kill?(square_btw, color)
+    c1 && c2
+  end
+end
+
 class Board
+  include Square
   attr_accessor :board_h, :turn_of, :pieces_h
 
   def initialize
@@ -52,6 +73,16 @@ class Board
     pieces_hash
   end
 
+  def pretty_print
+    puts ' '
+    board_h.each do |square, piece|
+      print piece ? piece.symbol : '_'         # square
+      print ' '                                # space between squares
+      puts "   #{square[1]}" if square[0] == 8 # row number labels
+    end
+    puts "\na b c d e f g h\n "                # column labels
+  end
+
   def play
     loop do
       self.pretty_print # rubocop:disable Style/RedundantSelf
@@ -64,16 +95,6 @@ class Board
         puts 'Invalid input!'
       end
     end
-  end
-
-  def pretty_print
-    puts ' '
-    board_h.each do |square, piece|
-      print piece ? piece.symbol : '_'         # square
-      print ' '                                # space between squares
-      puts "   #{square[1]}" if square[0] == 8 # row number labels
-    end
-    puts "\na b c d e f g h\n "                # column labels
   end
 
   def move_piece(move_a)
@@ -100,30 +121,6 @@ class Board
     [@board_h[square_from], square_from, square_to]
   end
 
-  # def is_move_valid?(move_a)
-  #   move_a in [piece, square_from, square_to]
-
-  #   return false unless (square_from + square_to).flatten.all?(1..8) # Valid squares
-  #   return false if square_from == square_to # Moving to same square
-  #   return false if piece.color != turn_of # Player not moving his own piece
-
-  #   kill = killing?(square_to)
-  #   return false if kill.nil? # square_to is occupied by players own piece
-
-  #   move_a.insert(2, kill)
-  #   move_a.push('check')
-  #   # move_a = [Piece, square_from, kill, square_to, 'check']
-
-  #   case piece.abbr
-  #   when :K then moved_as_king?(move_a)
-  #   when :Q then moved_as_rook?(move_a) || moved_as_bishop?(move_a)
-  #   when :R then moved_as_rook?(move_a)
-  #   when :N then moved_as_knight?(move_a)
-  #   when :B then moved_as_bishop?(move_a)
-  #   when :"" then moved_as_pawn?(move_a)
-  #   end
-  # end
-
   def killing?(square_to)
     if @board_h[square_to].nil? # square_to is empty
       false
@@ -133,49 +130,6 @@ class Board
       true
     end
   end
-
-  # def moved_as_king?(move_a)
-  #   move_a in [_, [col_f, row_f], _, [col_t, row_t], _]
-  #   ((col_f - col_t).abs <= 1) && ((row_f - row_t).abs <= 1)
-  # end
-
-  # def moved_as_rook?(move_a)
-  #   move_a in [_, [col_f, row_f], _, [col_t, row_t], _]
-
-  #   if col_f == col_t # moving vertically
-  #     col = col_f
-  #     rows_a = (row_f..row_t).to_a + (row_t..row_f).to_a
-  #     squares_btw = rows_a.map { |row| [col, row] }
-  #   elsif row_f == row_t # moving horizontally
-  #     row = row_f
-  #     cols_a = (col_f..col_t).to_a + (col_t..col_f).to_a
-  #     squares_btw = cols_a.map { |col| [col, row] }
-  #   else # not moving in a straight line
-  #     return false
-  #   end
-
-  #   squares_btw -= [[col_f, row_f], [col_t, row_t]]
-  #   squares_btw.all? { |square| @board_h[square].nil? }
-  # end
-
-  # def moved_as_bishop?(move_a)
-  #   move_a in [_, [col_f, row_f], _, [col_t, row_t], _]
-  #   return false if (row_t - row_f).abs != (col_t - col_f).abs # not moving cross
-
-  #   rows_a = (row_f..row_t).to_a + (row_t..row_f).to_a.reverse
-  #   cols_a = (col_f..col_t).to_a + (col_t..col_f).to_a.reverse
-  #   squares_btw = cols_a.zip(rows_a)
-
-  #   squares_btw -= [[col_f, row_f], [col_t, row_t]]
-  #   squares_btw.all? { |square| @board_h[square].nil? }
-  # end
-
-  # def moved_as_knight?(move_a)
-  #   move_a in [_, [col_f, row_f], _, [col_t, row_t], _]
-
-  #   condition = [(col_t - col_f).abs, (row_t - row_f).abs]
-  #   condition.one?(1) && condition.one?(2)
-  # end
 
   def moved_as_pawn?(move_a)
     move_a in [piece, [col_f, row_f], kill, [col_t, row_t], _]
@@ -212,78 +166,73 @@ class Board
     end
   end
 
-  def push_n_continue?(square_btw, array, color)
-    return false if square_btw.any? { |num| (num < 1) || (num > 8) }
-
-    puts 'Valid square'
-
-    if board_h[square_btw].nil?
-      array.push(square_btw)
-      puts 'Empty square'
-      true
-    elsif board_h[square_btw].color != color
-      array.push(square_btw)
-      puts 'opponent found'
-      false
-    else
-      puts 'Another ppiece present'
-      false
-    end
-  end
-
-  def pawn_attacks(square, color, array = [])
+  def pawn_attacks(square, color)
     square in [col, row]
-    r = 1 if color == :white
-    r = -1 if color == :black
+    r = color == :white ? 1 : -1
 
-    push_n_continue?([col + 1, row + r], array, color)
-    push_n_continue?([col - 1, row + r], array, color)
-
+    array = [[col + 1, row + r], [col - 1, row + r]]
+    array.select! { |square_btw| attack_square?(square_btw, color) }
     array
   end
 
-  def king_attacks(square, color, array = [])
+  def king_attacks(square, color)
     square in [col, row]
-    (-1..1).each do |c|
-      (-1..1).each do |r|
-        push_n_continue?([col + c, row + r], array, color)
-      end
-    end
+    col_a = ((col - 1)..(col + 1)).to_a
+    row_a = ((row - 1)..(row + 1)).to_a
+
+    array = col_a.product row_a - square
+    array.select! { |square_btw| attack_square?(square_btw, color) }
     array
   end
 
   def rook_attacks(square, color, array = [])
-    square in [col, row]
-
-    ((col + 1)..8).each { |col_b| break unless push_n_continue?([col_b, row], array, color) }
-    ((col - 1)..1).each { |col_b| break unless push_n_continue?([col_b, row], array, color) }
-    ((row + 1)..8).each { |row_b| break unless push_n_continue?([col, row_b], array, color) }
-    ((row - 1)..1).each { |row_b| break unless push_n_continue?([col, row_b], array, color) }
-
-    array
-  end
-
-  def bishop_attacks(square, color, array = [])
-    [1, -1].each do |c|
-      [-1, 1].each do |r|
-        square in [col_b, row_b]
-        loop do
-          col_b += c
-          row_b += r
-          break unless push_n_continue?([col_b, row_b], array, color)
+    (0..1).each do |roc|
+      [-1, 1].each do |i|
+        square_btw = square
+        while square_valid?(square_btw)
+          if square_btw == square
+            square_btw[roc] += i
+          elsif square_empty?(square_btw)
+            array.push(square_btw)
+            square_btw[roc] += i
+          else
+            array.push(square_btw) if can_kill?(square_btw, color)
+            break
+          end
         end
       end
     end
     array
   end
 
-  def knight_attacks(square, color, array = [])
+  def bishop_attacks(square, color, array = [])
+    [1, -1].each do |c|
+      [-1, 1].each do |r|
+        square in square_btw
+        while square_valid?(square_btw)
+          if square_btw == square
+            square_btw[0] += c
+            square_btw[1] += r
+          elsif square_empty?(square_btw)
+            array.push(square_btw)
+            square_btw[0] += c
+            square_btw[1] += r
+          else
+            array.push(square_btw) if can_kill?(square_btw, color)
+            break
+          end
+        end
+      end
+    end
+    array
+  end
+
+  def knight_attacks(square, color)
     square in [col, row]
 
-    a = [col + 2, col - 2].product([row + 1, row - 1]) +
-        [col + 1, col - 1].product([row + 2, row - 2])
-
-    a.each { |square_btw| push_n_continue?(square_btw, array, color) }
+    array = [col + 2, col - 2].product([row + 1, row - 1]) +
+            [col + 1, col - 1].product([row + 2, row - 2])
+    array.select! { |square_btw| attack_square?(square_btw, color) }
     array
   end
 end

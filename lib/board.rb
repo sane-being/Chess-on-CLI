@@ -184,35 +184,60 @@ class Board
   ###########################################################################
   #
   def attacks(piece)
-    pieces_h[piece] = case piece.abbr
-                      when :K then moved_as_king?(move_a)
-                      when :Q
-                        array = rook_attacks(piece.square, piece.color)
-                        array += bishop_attacks(piece.square, piece.color)
-                        array
-                      when :R then rook_attacks(piece.square, piece.color)
-                      when :N then knight_attacks(piece.square, piece.color)
-                      when :B then bishop_attacks(piece.square, piece.color)
-                      when :"" then moved_as_pawn?(move_a)
-                      end
+    pieces_h[piece] =
+      case piece.abbr
+      when :K then king_attacks(piece.square, piece.color)
+      when :Q then rook_attacks(piece.square, piece.color) +
+                   bishop_attacks(piece.square, piece.color)
+      when :R then rook_attacks(piece.square, piece.color)
+      when :N then knight_attacks(piece.square, piece.color)
+      when :B then bishop_attacks(piece.square, piece.color)
+      when :"" then pawn_attacks(piece.square, piece.color)
+      end
   end
 
-  def push?(square_btw, array, color)
-    if board_h[square_btw].nil? || board_h[square_btw].color != color
+  def push_n_continue?(square_btw, array, color)
+    return false if square_btw.all? { |num| num >= 1 && num <= 8 }
+
+    if board_h[square_btw].nil?
       array.push(square_btw)
       true
+    elsif board_h[square_btw].color != color
+      array.push(square_btw)
+      false
     else
       false
     end
   end
 
+  def pawn_attacks(square, color, array = [])
+    square in [col, row]
+    r = 1 if color == :white
+    r = -1 if color == :black
+
+    push_n_continue?([col + 1, row + r], array, color)
+    push_n_continue?([col - 1, row + r], array, color)
+
+    array
+  end
+
+  def king_attacks(square, color, array = [])
+    square in [col, row]
+    (-1..1).each do |c|
+      (-1..1).each do |r|
+        push_n_continue?([col + c, row + r], array, color)
+      end
+    end
+    array
+  end
+
   def rook_attacks(square, color, array = [])
     square in [col, row]
 
-    ((col + 1)..8).each { |col_b| break unless push?([col_b, row], array, color) }
-    ((col - 1)..1).each { |col_b| break unless push?([col_b, row], array, color) }
-    ((row + 1)..8).each { |row_b| break unless push?([col, row_b], array, color) }
-    ((row - 1)..1).each { |row_b| break unless push?([col, row_b], array, color) }
+    ((col + 1)..8).each { |col_b| break unless push_n_continue?([col_b, row], array, color) }
+    ((col - 1)..1).each { |col_b| break unless push_n_continue?([col_b, row], array, color) }
+    ((row + 1)..8).each { |row_b| break unless push_n_continue?([col, row_b], array, color) }
+    ((row - 1)..1).each { |row_b| break unless push_n_continue?([col, row_b], array, color) }
 
     array
   end
@@ -224,27 +249,20 @@ class Board
         loop do
           col_b += c
           row_b += r
-          break if (1..8).none?(col_b) || (1..8).none?(row_b)
-          break unless push?([col_b, row_b], array, color)
+          break unless push_n_continue?([col_b, row_b], array, color)
         end
       end
     end
     array
   end
 
-  def knight_attacks(piece)
-    piece.square in [col, row]
-    piece.color in color
+  def knight_attacks(square, color, array = [])
+    square in [col, row]
 
-    array = [col + 2, col - 2].product([row + 1, row - 1]) +
-            [col + 1, col - 1].product([row + 2, row - 2])
+    a = [col + 2, col - 2].product([row + 1, row - 1]) +
+        [col + 1, col - 1].product([row + 2, row - 2])
 
-    array.select! do |square|
-      c1 = square.all? { |num| (1..8).include? num }
-      c2 = board_h[square].nil?
-      c3 = board_h[square].color != color
-      c1 && (c2 || c3)
-    end
+    a.each { |square_btw| push_n_continue?(square_btw, array, color) }
     array
   end
 end

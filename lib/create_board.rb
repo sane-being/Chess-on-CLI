@@ -21,9 +21,9 @@ module CreateBoard
     # creating remaining pieces
     pieces_seq = %w[rook knight bishop queen king bishop knight rook]
     pieces_seq.each_with_index do |piece_name, col|
-      col += 1 # index starts from 0, but col should start from 1
-      pieces_a.push Piece.new(piece_name, :white, [col, 1])
-      pieces_a.push Piece.new(piece_name, :black, [col, 8])
+      # index starts from 0, but col should start from 1
+      pieces_a.push Piece.new(piece_name, :white, [col + 1, 1])
+      pieces_a.push Piece.new(piece_name, :black, [col + 1, 8])
     end
 
     pieces_hash = {}

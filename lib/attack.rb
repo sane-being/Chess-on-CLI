@@ -58,7 +58,7 @@ module AttackSquare
   def rook_attacks(square, color, array = [])
     (0..1).each do |roc|
       [-1, 1].each do |i|
-        square_to = square
+        square_to = square.clone
         while square_valid?(square_to)
           if square_to == square
             square_to[roc] += i
@@ -78,7 +78,7 @@ module AttackSquare
   def bishop_attacks(square, color, array = [])
     [1, -1].each do |c|
       [-1, 1].each do |r|
-        square in square_to
+        square_to = square.clone
         while square_valid?(square_to)
           if square_to == square
             square_to[0] += c

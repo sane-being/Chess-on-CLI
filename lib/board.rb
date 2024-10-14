@@ -20,6 +20,7 @@ class Board
 
   def play
     loop do
+      pp pieces_h
       self.pretty_print # rubocop:disable Style/RedundantSelf
       copy_pieces_h = pieces_h.clone
       # copy_pieces_h = {}

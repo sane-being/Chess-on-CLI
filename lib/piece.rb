@@ -28,13 +28,14 @@ BLACK_SYMBOLS = {
 COLORS = %i[white black].freeze
 
 class Piece
-  attr_accessor :name, :abbr, :color, :symbol
+  attr_accessor :name, :abbr, :color, :symbol, :square
 
-  def initialize(name, color)
+  def initialize(name, color, square)
     @name = name
     @color = color
     @abbr = abbreviate(name)
     @symbol = make_symbols(abbr, color)
+    @square = square
   end
 
   def to_s

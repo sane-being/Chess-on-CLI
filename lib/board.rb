@@ -55,7 +55,13 @@ class Board
   def is_move_valid?(move_a)
     move_a in [piece, square_from, square_to]
 
-    return true if (piece.abbr == :"") && moving_as_pawn?(square_from, square_to, piece.color)
+    return false unless square_valid?(square_from) && square_valid?(square_to)
+    return false if square_from == square_to # Moving to same square
+    return false if piece.nil? # piece not present on square_from
+    return false if piece.color != turn_of # Player not moving his own piece
+
+    return true if (piece.abbr == :"") &&
+                   moving_as_pawn?(square_from, square_to, piece.color)
 
     pieces_h[piece].include? square_to
   end

@@ -58,15 +58,15 @@ module AttackSquare
   def rook_attacks(square, color, array = [])
     (0..1).each do |roc|
       [-1, 1].each do |i|
-        square_to = square.clone
-        while square_valid?(square_to)
-          if square_to == square
-            square_to[roc] += i
-          elsif square_empty?(square_to)
-            array.push(square_to)
-            square_to[roc] += i
+        square in [col, row]
+        while square_valid?([col, row])
+          if square == [col, row]
+            roc == 1 ? (col += i) : row += i
+          elsif square_empty?([col, row])
+            array.push([col, row])
+            roc == 1 ? (col += i) : row += i
           else
-            array.push(square_to) if can_kill?(square_to, color)
+            array.push([col, row]) if can_kill?([col, row], color)
             break
           end
         end
@@ -78,17 +78,17 @@ module AttackSquare
   def bishop_attacks(square, color, array = [])
     [1, -1].each do |c|
       [-1, 1].each do |r|
-        square_to = square.clone
-        while square_valid?(square_to)
-          if square_to == square
-            square_to[0] += c
-            square_to[1] += r
-          elsif square_empty?(square_to)
-            array.push(square_to)
-            square_to[0] += c
-            square_to[1] += r
+        square in [col, row]
+        while square_valid?([col, row])
+          if square == [col, row]
+            col += c
+            row += r
+          elsif square_empty?([col, row])
+            array.push([col, row])
+            col += c
+            row += r
           else
-            array.push(square_to) if can_kill?(square_to, color)
+            array.push([col, row]) if can_kill?([col, row], color)
             break
           end
         end

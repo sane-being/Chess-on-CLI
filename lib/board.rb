@@ -6,9 +6,47 @@ class Board
   def initialize
     # board hash of 32 pieces, piece => array of squares attacking
     @board_h = create_new_board
+    @pieces_h = create_pieces
     @turn_of = :white
-    @pieces_h = a
     # @moves_a = []
+  end
+
+  def create_new_board
+    ## Array of 64 squares: [1,1] to [8,8]
+    new_board = []
+    (1..8).to_a.reverse.each { |row| new_board += (1..8).to_a.product([row]) }
+    # creating empty Board hash,
+    new_board.to_h { |square| [square, nil] }
+    new_board
+  end
+
+  def create_pieces
+    pieces_a = []
+
+    # creating pawns
+    (1..8).each do |col|
+      pieces_a.push Piece.new('pawn', :white, [col, 2])
+      pieces_a.push Piece.new('pawn', :black, [col, 7])
+    end
+
+    # creating remaining pieces
+    pieces_seq = %w[rook knight bishop queen king bishop knight rook]
+    pieces_seq.each_with_index do |piece_name, col|
+      col += 1 # index starts from 0, but col should start from 1
+      pieces_a.push Piece.new(piece_name, :white, [col, 1])
+      pieces_a.push Piece.new(piece_name, :black, [col, 8])
+    end
+
+    pieces_hash = {}
+
+    pieces_a.each do |piece|
+      # placing pieces on the board (@board_h)
+      @board_h.store(piece.square, piece)
+      # finding squares that the piece can attack on the next move
+      pieces_hash.store(piece, attacks(piece))
+    end
+
+    pieces_hash
   end
 
   def play
@@ -48,30 +86,6 @@ class Board
                end
   end
 
-  def create_new_board
-    ## Array of 64 squares: [1,1] to [8,8]
-    new_board = []
-    (1..8).to_a.reverse.each { |row| new_board += (1..8).to_a.product([row]) }
-    # creating empty Board hash,
-    new_board = new_board.to_h { |square| [square, nil] }
-
-    # placing pawns
-    (1..8).each do |col|
-      new_board[[col, 2]] = Piece.new('pawn', :white)
-      new_board[[col, 7]] = Piece.new('pawn', :black)
-    end
-
-    # placing remaining pieces
-    pieces_seq = %w[rook knight bishop queen king bishop knight rook]
-    pieces_seq.each_with_index do |piece, col|
-      col += 1 # index starts from 0, but col starts from 1
-      new_board[[col, 1]] = Piece.new(piece, :white)
-      new_board[[col, 8]] = Piece.new(piece, :black)
-    end
-
-    new_board # returning board
-  end
-
   def decode_move(move)
     move = move.split('')
     square_from, square_to = move[0..1], move[2..3] # rubocop:disable Style/ParallelAssignment
@@ -83,29 +97,29 @@ class Board
     [@board_h[square_from], square_from, square_to]
   end
 
-  def is_move_valid?(move_a)
-    move_a in [piece, square_from, square_to]
+  # def is_move_valid?(move_a)
+  #   move_a in [piece, square_from, square_to]
 
-    return false unless (square_from + square_to).flatten.all?(1..8) # Valid squares
-    return false if square_from == square_to # Moving to same square
-    return false if piece.color != turn_of # Player not moving his own piece
+  #   return false unless (square_from + square_to).flatten.all?(1..8) # Valid squares
+  #   return false if square_from == square_to # Moving to same square
+  #   return false if piece.color != turn_of # Player not moving his own piece
 
-    kill = killing?(square_to)
-    return false if kill.nil? # square_to is occupied by players own piece
+  #   kill = killing?(square_to)
+  #   return false if kill.nil? # square_to is occupied by players own piece
 
-    move_a.insert(2, kill)
-    move_a.push('check')
-    # move_a = [Piece, square_from, kill, square_to, 'check']
+  #   move_a.insert(2, kill)
+  #   move_a.push('check')
+  #   # move_a = [Piece, square_from, kill, square_to, 'check']
 
-    case piece.abbr
-    when :K then moved_as_king?(move_a)
-    when :Q then moved_as_rook?(move_a) || moved_as_bishop?(move_a)
-    when :R then moved_as_rook?(move_a)
-    when :N then moved_as_knight?(move_a)
-    when :B then moved_as_bishop?(move_a)
-    when :"" then moved_as_pawn?(move_a)
-    end
-  end
+  #   case piece.abbr
+  #   when :K then moved_as_king?(move_a)
+  #   when :Q then moved_as_rook?(move_a) || moved_as_bishop?(move_a)
+  #   when :R then moved_as_rook?(move_a)
+  #   when :N then moved_as_knight?(move_a)
+  #   when :B then moved_as_bishop?(move_a)
+  #   when :"" then moved_as_pawn?(move_a)
+  #   end
+  # end
 
   def killing?(square_to)
     if @board_h[square_to].nil? # square_to is empty
@@ -117,48 +131,48 @@ class Board
     end
   end
 
-  def moved_as_king?(move_a)
-    move_a in [_, [col_f, row_f], _, [col_t, row_t], _]
-    ((col_f - col_t).abs <= 1) && ((row_f - row_t).abs <= 1)
-  end
+  # def moved_as_king?(move_a)
+  #   move_a in [_, [col_f, row_f], _, [col_t, row_t], _]
+  #   ((col_f - col_t).abs <= 1) && ((row_f - row_t).abs <= 1)
+  # end
 
-  def moved_as_rook?(move_a)
-    move_a in [_, [col_f, row_f], _, [col_t, row_t], _]
+  # def moved_as_rook?(move_a)
+  #   move_a in [_, [col_f, row_f], _, [col_t, row_t], _]
 
-    if col_f == col_t # moving vertically
-      col = col_f
-      rows_a = (row_f..row_t).to_a + (row_t..row_f).to_a
-      squares_btw = rows_a.map { |row| [col, row] }
-    elsif row_f == row_t # moving horizontally
-      row = row_f
-      cols_a = (col_f..col_t).to_a + (col_t..col_f).to_a
-      squares_btw = cols_a.map { |col| [col, row] }
-    else # not moving in a straight line
-      return false
-    end
+  #   if col_f == col_t # moving vertically
+  #     col = col_f
+  #     rows_a = (row_f..row_t).to_a + (row_t..row_f).to_a
+  #     squares_btw = rows_a.map { |row| [col, row] }
+  #   elsif row_f == row_t # moving horizontally
+  #     row = row_f
+  #     cols_a = (col_f..col_t).to_a + (col_t..col_f).to_a
+  #     squares_btw = cols_a.map { |col| [col, row] }
+  #   else # not moving in a straight line
+  #     return false
+  #   end
 
-    squares_btw -= [[col_f, row_f], [col_t, row_t]]
-    squares_btw.all? { |square| @board_h[square].nil? }
-  end
+  #   squares_btw -= [[col_f, row_f], [col_t, row_t]]
+  #   squares_btw.all? { |square| @board_h[square].nil? }
+  # end
 
-  def moved_as_bishop?(move_a)
-    move_a in [_, [col_f, row_f], _, [col_t, row_t], _]
-    return false if (row_t - row_f).abs != (col_t - col_f).abs # not moving cross
+  # def moved_as_bishop?(move_a)
+  #   move_a in [_, [col_f, row_f], _, [col_t, row_t], _]
+  #   return false if (row_t - row_f).abs != (col_t - col_f).abs # not moving cross
 
-    rows_a = (row_f..row_t).to_a + (row_t..row_f).to_a.reverse
-    cols_a = (col_f..col_t).to_a + (col_t..col_f).to_a.reverse
-    squares_btw = cols_a.zip(rows_a)
+  #   rows_a = (row_f..row_t).to_a + (row_t..row_f).to_a.reverse
+  #   cols_a = (col_f..col_t).to_a + (col_t..col_f).to_a.reverse
+  #   squares_btw = cols_a.zip(rows_a)
 
-    squares_btw -= [[col_f, row_f], [col_t, row_t]]
-    squares_btw.all? { |square| @board_h[square].nil? }
-  end
+  #   squares_btw -= [[col_f, row_f], [col_t, row_t]]
+  #   squares_btw.all? { |square| @board_h[square].nil? }
+  # end
 
-  def moved_as_knight?(move_a)
-    move_a in [_, [col_f, row_f], _, [col_t, row_t], _]
+  # def moved_as_knight?(move_a)
+  #   move_a in [_, [col_f, row_f], _, [col_t, row_t], _]
 
-    condition = [(col_t - col_f).abs, (row_t - row_f).abs]
-    condition.one?(1) && condition.one?(2)
-  end
+  #   condition = [(col_t - col_f).abs, (row_t - row_f).abs]
+  #   condition.one?(1) && condition.one?(2)
+  # end
 
   def moved_as_pawn?(move_a)
     move_a in [piece, [col_f, row_f], kill, [col_t, row_t], _]

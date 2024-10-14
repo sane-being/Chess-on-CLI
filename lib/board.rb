@@ -1,7 +1,7 @@
 require_relative 'piece'
 
 class Board
-  attr_accessor :board_h, :turn_of
+  attr_accessor :board_h, :turn_of, :pieces_h
 
   def initialize
     # board hash of 32 pieces, piece => array of squares attacking
@@ -17,7 +17,6 @@ class Board
     (1..8).to_a.reverse.each { |row| new_board += (1..8).to_a.product([row]) }
     # creating empty Board hash,
     new_board.to_h { |square| [square, nil] }
-    new_board
   end
 
   def create_pieces
@@ -37,13 +36,17 @@ class Board
       pieces_a.push Piece.new(piece_name, :black, [col, 8])
     end
 
+    puts 'pieces created'
+
     pieces_hash = {}
 
     pieces_a.each do |piece|
       # placing pieces on the board (@board_h)
+      puts "#{piece.square}, #{piece}"
       @board_h.store(piece.square, piece)
       # finding squares that the piece can attack on the next move
       pieces_hash.store(piece, attacks(piece))
+      puts 'Seems ok'
     end
 
     pieces_hash
@@ -198,28 +201,32 @@ class Board
   ###########################################################################
   #
   def attacks(piece)
-    pieces_h[piece] =
-      case piece.abbr
-      when :K then king_attacks(piece.square, piece.color)
-      when :Q then rook_attacks(piece.square, piece.color) +
-                   bishop_attacks(piece.square, piece.color)
-      when :R then rook_attacks(piece.square, piece.color)
-      when :N then knight_attacks(piece.square, piece.color)
-      when :B then bishop_attacks(piece.square, piece.color)
-      when :"" then pawn_attacks(piece.square, piece.color)
-      end
+    case piece.abbr
+    when :K then king_attacks(piece.square, piece.color)
+    when :Q then rook_attacks(piece.square, piece.color) +
+      bishop_attacks(piece.square, piece.color)
+    when :R then rook_attacks(piece.square, piece.color)
+    when :N then knight_attacks(piece.square, piece.color)
+    when :B then bishop_attacks(piece.square, piece.color)
+    when :"" then pawn_attacks(piece.square, piece.color)
+    end
   end
 
   def push_n_continue?(square_btw, array, color)
-    return false if square_btw.all? { |num| num >= 1 && num <= 8 }
+    return false if square_btw.any? { |num| (num < 1) || (num > 8) }
+
+    puts 'Valid square'
 
     if board_h[square_btw].nil?
       array.push(square_btw)
+      puts 'Empty square'
       true
     elsif board_h[square_btw].color != color
       array.push(square_btw)
+      puts 'opponent found'
       false
     else
+      puts 'Another ppiece present'
       false
     end
   end

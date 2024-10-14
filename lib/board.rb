@@ -47,13 +47,13 @@ class Board
       square[0] = square[0].ord - 96
       square[1] = square[1].to_i
     end
-    # [piece, square_from, square_to]
+    # [piece, square_from, kill, square_to, check]
     p square_to
-    [@board_h[square_from], square_from, square_to]
+    [@board_h[square_from], square_from, nil, square_to, nil]
   end
 
   def is_move_valid?(move_a)
-    move_a in [piece, square_from, square_to]
+    move_a in [piece, square_from, _, square_to, _]
 
     return false unless square_valid?(square_from) && square_valid?(square_to)
     return false if square_from == square_to # Moving to same square
@@ -67,10 +67,10 @@ class Board
   end
 
   def killing?(move_a)
-    move_a in [_, _, square_to]
+    move_a in [_, _, _, square_to, _]
 
     kill = board_h[square_to].nil? ? nil : :x
-    move_a.insert(2, kill)
+    move_a[2] = kill
 
     case kill
     when nil then false
@@ -81,7 +81,7 @@ class Board
   end
 
   def move_piece(move_a)
-    move_a in [piece, square_from, _, square_to]
+    move_a in [piece, square_from, _, square_to, _]
 
     piece.square = square_to
 

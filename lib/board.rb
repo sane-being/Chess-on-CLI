@@ -5,27 +5,38 @@ require_relative 'create_board'
 class Board
   include CreateBoard
   include AttackSquare
-  attr_accessor :board_h, :turn_of, :pieces_h
+  attr_accessor :board_h, :turn_of, :pieces_h,
+                :white_king, :black_king
 
   def initialize
     # board hash of 32 pieces, piece => array of squares attacking
     @board_h = create_new_board
     @pieces_h = create_pieces
     @turn_of = :white
+    @white_king = Piece.new('king', :white, [5, 1])
+    @black_king = Piece.new('king', :black, [5, 8])
     # @moves_a = []
   end
 
   def play
     loop do
       self.pretty_print # rubocop:disable Style/RedundantSelf
-      print "move of #{turn_of}:"
-      move_a = decode_move(gets)
-      if is_move_valid?(move_a)
+      copy_pieces_h = pieces_h.clone
+      # copy_pieces_h = {}
+      # pieces_h.each { |p, a| copy_pieces_h[p.clone] = a }
+      begin
+        print "move of #{turn_of}:"
+        move_a = decode_move(gets)
+        is_move_valid?(move_a)
         killing?(move_a)
         move_piece(move_a)
+        getting_or_giving_check?(move_a)
         toggle_turn
-      else
-        puts 'Invalid input!'
+        pp move_a
+      rescue StandardError => e
+        puts "Invalid input! #{e.message}\nEnter again!"
+        @pieces_h = copy_pieces_h
+        retry
       end
     end
   end
@@ -55,15 +66,18 @@ class Board
   def is_move_valid?(move_a)
     move_a in [piece, square_from, _, square_to, _]
 
-    return false unless square_valid?(square_from) && square_valid?(square_to)
-    return false if square_from == square_to # Moving to same square
-    return false if piece.nil? # piece not present on square_from
-    return false if piece.color != turn_of # Player not moving his own piece
-
-    return true if (piece.abbr == :"") &&
-                   moving_as_pawn?(square_from, square_to, piece.color)
-
-    pieces_h[piece].include? square_to
+    if square_from == square_to
+      raise 'Plaese move piece to a different square'
+    elsif piece.nil?
+      raise 'No piece present on selected square'
+    elsif piece.color != turn_of
+      raise "Plaese move your own piece (#{piece.color})"
+    elsif (piece.abbr == :"") &&
+          moving_as_pawn?(square_from, square_to, piece.color)
+      true
+    elsif pieces_h[piece].include? square_to
+      true
+    end
   end
 
   def killing?(move_a)
@@ -77,6 +91,26 @@ class Board
     when :x
       dying_piece = board_h[square_to]
       pieces_h.delete(dying_piece)
+    end
+  end
+
+  def getting_or_giving_check?(move_a)
+    kings_under_check = []
+
+    pieces_h.each do |piece_upd, array|
+      kings_under_check.push(:white) if piece_upd.color == :black &&
+                                        array.include?(white_king.square)
+      kings_under_check.push(:black) if piece_upd.color == :white &&
+                                        array.include?(black_king.square)
+    end
+
+    if kings_under_check.empty?
+      false
+    elsif kings_under_check.include? turn_of
+      raise 'Your king is getting exposed to a check!'
+    else
+      move_a[4] = :+
+      true
     end
   end
 

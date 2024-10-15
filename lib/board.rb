@@ -20,11 +20,7 @@ class Board
 
   def play
     loop do
-      pp pieces_h
-      self.pretty_print # rubocop:disable Style/RedundantSelf
-      copy_pieces_h = pieces_h.clone
-      # copy_pieces_h = {}
-      # pieces_h.each { |p, a| copy_pieces_h[p.clone] = a }
+      pretty_print
       begin
         print "move of #{turn_of}:"
         move_a = decode_move(gets)
@@ -32,13 +28,27 @@ class Board
         killing?(move_a)
         move_piece(move_a)
         getting_or_giving_check?(move_a)
-        toggle_turn
-        pp move_a
       rescue StandardError => e
         puts "Invalid input! #{e.message}\nEnter again!"
-        @pieces_h = copy_pieces_h
+        undo(move_a)
         retry
+      else
+        toggle_turn
       end
+    end
+  end
+
+  def undo(move_a)
+    move_a in [piece, square_from, dying_piece, square_to, _]
+
+    piece.square = square_from
+    dying_piece.square = square_to unless dying_piece.nil?
+
+    board_h[square_from] = piece
+    board_h[square_to] = dying_piece
+
+    pieces_h.each_key do |piece_upd|
+      pieces_h.store(piece_upd, attacks(piece_upd))
     end
   end
 
@@ -89,14 +99,15 @@ class Board
   def killing?(move_a)
     move_a in [_, _, _, square_to, _]
 
-    kill = board_h[square_to].nil? ? nil : :x
-    move_a[2] = kill
+    dying_piece = board_h[square_to]
+    move_a[2] = dying_piece
 
-    case kill
+    case dying_piece
     when nil then false
-    when :x
-      dying_piece = board_h[square_to]
-      pieces_h.delete(dying_piece)
+    else
+      dying_piece.square = nil
+      pieces_h[dying_piece] = nil
+      true
     end
   end
 

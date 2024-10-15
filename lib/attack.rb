@@ -1,6 +1,8 @@
 module AttackSquare
   # returns an array of squares, that the piece can attack on next move
   def attacks(piece)
+    return nil if piece.square.nil? # piece is dead
+
     case piece.abbr
     when :K then king_attacks(piece.square, piece.color)
     when :Q then rook_attacks(piece.square, piece.color) +

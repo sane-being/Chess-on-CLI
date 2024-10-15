@@ -19,17 +19,18 @@ class Board
 
   def play
     loop do
+      valid_move = false
       pretty_print
       begin
         print "move of #{turn_of}:"
         move_a = decode_move(gets)
-        is_move_valid?(move_a)
+        valid_move = is_move_valid?(move_a)
         killing?(move_a)
         move_piece(move_a)
         getting_or_giving_check?(move_a)
       rescue StandardError => e
         puts "Invalid input! #{e.message}\nEnter again!"
-        undo(move_a)
+        undo(move_a) if valid_move
         retry
       else
         toggle_turn
@@ -75,8 +76,10 @@ class Board
 
   def is_move_valid?(move_a)
     move_a in [piece, square_from, _, square_to, _]
-
-    if square_from == square_to
+    if !(square_valid?(square_from) && square_valid?(square_to))
+      raise "Enter the input in format: <square_from><square_to>
+  example: e2e4 to move the pawn"
+    elsif square_from == square_to
       raise 'Plaese move piece to a different square'
     elsif piece.nil?
       raise 'No piece present on selected square'

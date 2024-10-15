@@ -11,9 +11,9 @@ class Board
   def initialize
     @board_h = create_new_board
     @pieces_h = create_pieces # board hash of 32 pieces, piece => array of squares attacking
-    @turn_of = :white
     # @white_king
     # @black_king
+    @turn_of = :white
     @moves_log = []
   end
 
@@ -33,11 +33,33 @@ class Board
         undo(move_a) if valid_move
         retry
       else
+        go = checkmate?(move_a)
         log_this_move(move_a)
+        break if go
+
         toggle_turn
         pp moves_log
       end
     end
+  end
+
+  def checkmate?(move_a)
+    move_a in [_, _, _, _, check]
+
+    return false if check.nil?
+
+    king = turn_of == :white? ? black_king : white_king
+    possible_moves = pieces_h[king].clone
+
+    pieces_h.each do |piece_upd, array|
+      possible_moves -= array if piece_upd.color == turn_of
+      next unless possible_moves.empty?
+
+      move_a[4] = :'#'
+      puts "CHECKMATE!\n#{turn_of} wins!"
+      return true
+    end
+    false
   end
 
   def log_this_move(move_a)

@@ -5,7 +5,7 @@ require_relative 'create_board'
 class Board
   include CreateBoard
   include AttackSquare
-  attr_accessor :board_h, :turn_of, :pieces_h,
+  attr_accessor :board_h, :turn_of, :pieces_h, :moves_log,
                 :white_king, :black_king
 
   def initialize
@@ -14,7 +14,7 @@ class Board
     @turn_of = :white
     # @white_king
     # @black_king
-    # @moves_a = []
+    @moves_log = []
   end
 
   def play
@@ -22,7 +22,7 @@ class Board
       valid_move = false
       pretty_print
       begin
-        print "move of #{turn_of}:"
+        print "Turn of #{turn_of}:"
         move_a = decode_move(gets)
         valid_move = is_move_valid?(move_a)
         killing?(move_a)
@@ -33,9 +33,15 @@ class Board
         undo(move_a) if valid_move
         retry
       else
+        log_this_move(move_a)
         toggle_turn
+        pp moves_log
       end
     end
+  end
+
+  def log_this_move(move_a)
+    moves_log.push(move_a)
   end
 
   def undo(move_a)
@@ -78,7 +84,7 @@ class Board
     move_a in [piece, square_from, _, square_to, _]
     if !(square_valid?(square_from) && square_valid?(square_to))
       raise "Enter the input in format: <square_from><square_to>
-  example: e2e4 to move the pawn"
+  example: input 'e2e4' to move the pawn"
     elsif square_from == square_to
       raise 'Plaese move piece to a different square'
     elsif piece.nil?

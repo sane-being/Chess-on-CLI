@@ -33,14 +33,15 @@ class Board
         undo(move_a) if valid_move
         retry
       else
-        go = checkmate?(move_a)
+        cm = checkmate?(move_a)
         log_this_move(move_a)
-        break if go
+        break if cm
 
         toggle_turn
-        pp moves_log
       end
     end
+    pretty_print
+    puts "CHECKMATE!\n#{turn_of} wins!"
   end
 
   def checkmate?(move_a)
@@ -52,11 +53,12 @@ class Board
     possible_moves = pieces_h[king].clone
 
     pieces_h.each do |piece_upd, array|
-      possible_moves -= array if piece_upd.color == turn_of
+      next if array.nil? || piece_upd.color != turn_of
+
+      possible_moves -= array
       next unless possible_moves.empty?
 
       move_a[4] = :'#'
-      puts "CHECKMATE!\n#{turn_of} wins!"
       return true
     end
     false
@@ -145,6 +147,8 @@ class Board
     kings_under_check = []
 
     pieces_h.each do |piece_upd, array|
+      next if array.nil? # piece is dead
+
       kings_under_check.push(:white) if piece_upd.color == :black &&
                                         array.include?(white_king.square)
       kings_under_check.push(:black) if piece_upd.color == :white &&

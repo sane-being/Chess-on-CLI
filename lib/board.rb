@@ -9,12 +9,11 @@ class Board
                 :white_king, :black_king
 
   def initialize
-    # board hash of 32 pieces, piece => array of squares attacking
     @board_h = create_new_board
-    @pieces_h = create_pieces
+    @pieces_h = create_pieces # board hash of 32 pieces, piece => array of squares attacking
     @turn_of = :white
-    @white_king = Piece.new('king', :white, [5, 1])
-    @black_king = Piece.new('king', :black, [5, 8])
+    # @white_king
+    # @black_king
     # @moves_a = []
   end
 

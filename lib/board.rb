@@ -3,16 +3,20 @@ require_relative 'attack'
 require_relative 'create_board'
 
 class Board
-  include CreateBoard
+  include CreateNewBoard
   include AttackSquare
-  attr_accessor :board_h, :turn_of, :pieces_h, :moves_log,
-                :white_king, :black_king
+  attr_accessor :board_h, :pieces_h, :turn_of, :moves_log
 
   def initialize
-    @board_h = create_new_board
-    @pieces_h = create_pieces # board hash of 32 pieces, piece => array of squares attacking
-    # @white_king
-    # @black_king
+    # Hash of 64 squares on board as keys, square => piece on square
+    @board_h = create_board.to_h { |square| [square, nil] }
+
+    # Hash of all the pieces (32), piece => squares attackable by it on next move
+    @pieces_h = create_pieces.to_h do |piece|
+      @board_h[piece.square] = piece # placing pieces on the board (@board_h)
+      [piece, attacks(piece)]
+    end
+
     @turn_of = :white
     @moves_log = []
   end

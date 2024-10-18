@@ -1,4 +1,4 @@
-module AttackSquare
+module AttackMap
   # returns an array of squares, that the piece can attack on next move
   def attacks(piece)
     return nil if piece.square.nil? # piece is dead
@@ -57,48 +57,6 @@ module AttackSquare
     array
   end
 
-  def rook_attacks(square, color, array = [])
-    (0..1).each do |roc|
-      [-1, 1].each do |i|
-        square in [col, row]
-        while square_valid?([col, row])
-          if square == [col, row]
-            roc == 1 ? (col += i) : row += i
-          elsif square_empty?([col, row])
-            array.push([col, row])
-            roc == 1 ? (col += i) : row += i
-          else
-            array.push([col, row]) if can_kill?([col, row], color)
-            break
-          end
-        end
-      end
-    end
-    array
-  end
-
-  def bishop_attacks(square, color, array = [])
-    [1, -1].each do |c|
-      [-1, 1].each do |r|
-        square in [col, row]
-        while square_valid?([col, row])
-          if square == [col, row]
-            col += c
-            row += r
-          elsif square_empty?([col, row])
-            array.push([col, row])
-            col += c
-            row += r
-          else
-            array.push([col, row]) if can_kill?([col, row], color)
-            break
-          end
-        end
-      end
-    end
-    array
-  end
-
   def knight_attacks(square, color)
     square in [col, row]
 
@@ -106,6 +64,38 @@ module AttackSquare
             [col + 1, col - 1].product([row + 2, row - 2])
     array.select! { |square_to| attack_square?(square_to, color) }
     array
+  end
+
+  def rook_attacks(square, color)
+    right = linear_attack(square, color) { |col, row| [col + 1, row] }
+    left = linear_attack(square, color) { |col, row| [col - 1, row] }
+    up = linear_attack(square, color) { |col, row| [col, row + 1] }
+    down = linear_attack(square, color) { |col, row| [col, row - 1] }
+
+    right + left + up + down
+  end
+
+  def bishop_attacks(square, color)
+    up_right = linear_attack(square, color) { |col, row| [col + 1, row + 1] }
+    up_left = linear_attack(square, color) { |col, row| [col - 1, row + 1] }
+    down_right = linear_attack(square, color) { |col, row| [col + 1, row - 1] }
+    down_left = linear_attack(square, color) { |col, row| [col - 1, row - 1] }
+
+    up_right + up_left + down_right + down_left
+  end
+
+  def linear_attack(square, color, &block)
+    line_a = []
+    square_nxt = square.clone
+
+    loop do
+      square_nxt = block.call(*square_nxt) # get next square
+      return line_a unless square_valid?(square_nxt)
+
+      line_a.push(square_nxt) if square_empty?(square_nxt) ||
+                                 can_kill?(square_nxt, color)
+      return line_a if !square_empty?(square_nxt) # rubocop:disable Style/NegatedIf
+    end
   end
 
   ##############################################

@@ -28,7 +28,7 @@ class Piece
     "": 0x265F
   }
 
-  attr_accessor :name, :abbr, :color, :symbol, :square
+  attr_accessor :name, :color, :abbr, :symbol, :square
 
   def initialize(name, color, square)
     @name = name

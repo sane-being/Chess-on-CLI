@@ -89,12 +89,9 @@ example: input 'e2e4' to move the pawn",
       when square_from == square_to        then 2
       when piece.nil?                      then 3
       when piece.color != act_player.color then 4
-      when piece.name == 'pawn'
-        return if moving_as_pawn?(square_from, square_to, piece.color) || # pawn is moving
-                  (!square_empty?(square_to) && # pawn is killing
-                  act_player.attack_map[piece].include?(square_to))
-
-        5
+      when (piece.name == 'pawn') && # pawn is moving
+           pawn_moves(square_from, piece.color).include?(square_to)
+        then return
       when act_player.attack_map[piece].include?(square_to) then return
       else 5
       end
@@ -208,7 +205,6 @@ example: input 'e2e4' to move the pawn",
         board_h[piece_upd.square] = piece_upd
       end
     end
-
     update_attack_maps
   end
 end

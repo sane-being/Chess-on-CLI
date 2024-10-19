@@ -3,14 +3,16 @@ module AttackMap
   def attacks(piece)
     return nil if piece.square.nil? # piece is dead
 
+    [piece.square, piece.color] in [square, color]
+
     case piece.abbr
-    when :K then king_attacks(piece.square, piece.color)
-    when :Q then rook_attacks(piece.square, piece.color) +
-      bishop_attacks(piece.square, piece.color)
-    when :R then rook_attacks(piece.square, piece.color)
-    when :N then knight_attacks(piece.square, piece.color)
-    when :B then bishop_attacks(piece.square, piece.color)
-    when :"" then pawn_attacks(piece.square, piece.color)
+    when :K then king_attacks(square, color)
+    when :Q then rook_attacks(square, color) +
+      bishop_attacks(square, color)
+    when :R then rook_attacks(square, color)
+    when :N then knight_attacks(square, color)
+    when :B then bishop_attacks(square, color)
+    when :"" then pawn_attacks(square, color)
     end
   end
 
@@ -26,25 +28,21 @@ module AttackMap
     array
   end
 
-  def moving_as_pawn?(square_from, square_to, color)
-    [square_from, square_to] in [[col_f, row_f], [col_t, row_t]]
+  def pawn_moves(square, color)
+    array = []
+    square in [col, row]
+    # initial row & moving direction r
+    r = color == :white ? 1 : -1
+    init_row = color == :white ? 2 : 7
+    step_frwd = row == init_row ? 2 : 1
 
-    return false unless square_valid?([col_t, row_t]) &&
-                        col_f == col_t                &&
-                        square_empty?([col_t, row_t])
+    step_frwd.times do
+      row += r
+      break unless square_valid?([col, row]) && square_empty?([col, row])
 
-    return false unless (color == :black && (row_f > row_t)) ||
-                        (color == :white && (row_f < row_t))
-
-    case (row_t - row_f).abs
-    when 2 # pawn making move of 2 squares
-      return false if [2, 7].none?(row_f) # pawn is not at its initial row
-
-      square_btw = color == :black ? [col_f, row_f - 1] : [col_f, row_f + 1]
-      @board_h[square_btw].nil? # square between is empty
-    when 1 then true # pawn moving one step
-    else        false
+      array.push [col, row]
     end
+    array
   end
 
   def king_attacks(square, color)

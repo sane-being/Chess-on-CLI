@@ -51,6 +51,7 @@ example: input 'e2e4' to move the pawn",
       end
       give_check_if_applies(move_a)
       is_checkmate = checkmate?(move_a)
+      move_a[4] = :'#' if is_checkmate
       moves_log.push(move_a)
       players.reverse!
     end
@@ -110,23 +111,6 @@ example: input 'e2e4' to move the pawn",
     opp_player.attack_map[dying_piece] = nil # removing attack_map of dying_piece
   end
 
-  # checking if active player is getting check
-  def check_validity_2
-    opp_player.attack_map.each_value do |array|
-      next if array.nil? # piece is dead
-      raise ERROR_MESSAGES[6] if array.include? act_player.king.square
-    end
-  end
-
-  # checking  if check has been given to the opponent
-  def give_check_if_applies(move_a)
-    act_player.attack_map.each_value do |array|
-      next if array.nil? # piece is dead
-
-      move_a[4] = :+ if array.include? opp_player.king.square
-    end
-  end
-
   # move piece & update related objects
   def move_piece(move_a)
     move_a in [piece, square_from, _, square_to, _]
@@ -141,32 +125,12 @@ example: input 'e2e4' to move the pawn",
     update_attack_maps
   end
 
-  # checking if opponent player is checkmate
-  def checkmate?(move_a)
-    move_a in [_, _, _, _, check]
-
-    # kill check giver
-    # block check giver with other piece
-    # move king to another location
-
-    return false if check.nil?
-
-    # getting possible moves for the king of opponent
-    king = opp_player.king
-    possible_moves = opp_player.attack_map[king].clone
-
-    # getting an array of all the squares attacked by any of the pieces of active player
-    attack_map_act = act_player.attack_map.values.flatten(1)
-
-    # removing attacked squares from possible moves (where opp will get check)
-    possible_moves -= attack_map_act
-
-    pp possible_moves
-
-    return false unless possible_moves.empty?
-
-    move_a[4] = :'#'
-    true
+  # checking if active player is getting check
+  def check_validity_2
+    opp_player.attack_map.each_value do |array|
+      next if array.nil? # piece is dead
+      raise ERROR_MESSAGES[6] if array.include? act_player.king.square
+    end
   end
 
   # undo executed move
@@ -182,6 +146,15 @@ example: input 'e2e4' to move the pawn",
     board_h[square_to] = dying_piece
 
     update_attack_maps
+  end
+
+  # checking  if check has been given to the opponent
+  def give_check_if_applies(move_a)
+    act_player.attack_map.each_value do |array|
+      next if array.nil? # piece is dead
+
+      move_a[4] = :+ if array.include? opp_player.king.square
+    end
   end
 
   def update_attack_maps
@@ -206,5 +179,79 @@ example: input 'e2e4' to move the pawn",
       end
     end
     update_attack_maps
+  end
+
+  # checking if opponent player is checkmate
+  def checkmate?(move_a)
+    move_a in [_, _, _, square_to, check]
+
+    return false if check.nil?
+
+    ### Attempt 1 ###
+    # Move opponent's king to another location
+
+    # getting an array of all the squares attacked by any of the pieces of active player
+    act_attack_map = act_player.attack_map.values.flatten(1)
+    # getting possible moves for the king of opponent to flee
+    opp_king_flee_map = opp_player.attack_map[opp_player.king].clone
+    opp_king_flee_map -= act_attack_map
+
+    return false unless (opp_king_flee_map - [square_to]).empty?
+
+    # find check giver pieces of active player
+    checker_pieces_h = act_player.attack_map.select do |_, attack_a|
+      attack_a.include?(opp_player.king.square)
+    end
+    # If there are more than one check giving pieces, and since king can't flee, it'd be a checkmate
+    # Because one move can kill/block only one check giver
+    return true if checker_pieces_h.length > 1
+
+    ### Attempt 2 ###
+    # Kill check giver using pieces other than king
+
+    checker_piece = checker_pieces_h.keys[0]
+    # Trying to kill check giver by any piece but king
+    # getting an array of all the squares attacked by any of the pieces of opponent player
+    opp_attack_map = opp_player.attack_map.reject { |piece_upd, _| piece_upd == opp_player.king }
+    opp_attack_map = opp_attack_map.values.flatten(1)
+
+    return false if opp_attack_map.include? checker_piece.square
+
+    ### Attempt 3 ###
+    # Block check giver
+
+    if %w[rook bishop queen].include? checker_piece.name
+      # Finding line of check
+      [opp_player.king.square, checker_piece.square] in [[col_k, row_k], [col_a, row_a]]
+      c = col_k <=> col_a
+      r = row_k <=> row_a
+      line_of_check = linear_attack(checker_piece.square, checker_piece.color) { |col, row| [col + c, row + r] }
+      line_of_check -= [opp_player.king.square]
+
+      # checking if any of the pieces can block line of check
+      can_block_on = line_of_check & opp_attack_map
+      return false unless can_block_on.empty?
+      # bug: pawns moving are not included in this yet
+    end
+
+    ### Attempt 4 (final) ###
+    # Kill check giver by king
+
+    return true unless opp_king_flee_map.include? square_to
+
+    # Implies that the square_to == checker_piece.square, & is adjacent to the opp king
+    esc_move = [opp_player.king, opp_player.king.square, nil, square_to, nil]
+    @act_player, @opp_player = @opp_player, @act_player
+    begin
+      kill_piece_if_any(esc_move)
+      move_piece(esc_move)
+      check_validity_2
+      is_king_exposed = false
+    rescue StandardError # king is gone
+      is_king_exposed = true
+    end
+    undo(esc_move)
+    @act_player, @opp_player = @opp_player, @act_player
+    is_king_exposed
   end
 end

@@ -50,7 +50,7 @@ module AttackMap
     col_a = ((col - 1)..(col + 1)).to_a
     row_a = ((row - 1)..(row + 1)).to_a
 
-    array = col_a.product row_a - square
+    array = col_a.product(row_a) - square
     array.select! { |square_to| attack_square?(square_to, color) }
     array
   end
@@ -82,6 +82,8 @@ module AttackMap
     up_right + up_left + down_right + down_left
   end
 
+  # Complimentary method for rook, bishop & queen
+  # Finds squares attacked by piece in one straight direction (straight or cross)
   def linear_attack(square, color, &block)
     line_a = []
     square_nxt = square.clone

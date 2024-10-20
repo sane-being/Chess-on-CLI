@@ -1,8 +1,16 @@
 require 'yaml'
 require_relative 'player'
 require_relative 'attack_map'
+require_relative 'piece'
 class Board
   include AttackMap
+
+  WELCOME = "----- CHESS on CLI -----
+
+1. New Game
+2. Load Game
+
+Press the number to select: ".freeze
 
   ERROR_MESSAGES = {
     1 => "Enter the input in format: <square_from><square_to>
@@ -25,42 +33,64 @@ example: input 'e2e4' to move the pawn",
     @player_white = Player.new(:white)
     @player_black = Player.new(:black)
 
+    @is_checkmate = false
     @moves_log = []
 
     place_pieces_on_board
   end
 
   def play
-    is_checkmate = false
-    players = [@player_white, @player_black]
-    until is_checkmate
-      @act_player, @opp_player = players
-      is_piece_moved = false
+    puts WELCOME
+    load_game if gets.chomp == '2'
+    until @is_checkmate
       pretty_print
-      begin
-        print "Turn of #{act_player}:"
-        move_a = decode_move(gets.chomp)
-        check_validity_1(move_a)
-        kill_piece_if_any(move_a)
-        move_piece(move_a)
-        is_piece_moved = true
-        check_validity_2
-      rescue StandardError => e
-        puts "Invalid input! #{e.message}\nEnter again!"
-        undo(move_a) if is_piece_moved
-        retry
-      end
-      give_check_if_applies(move_a)
-      is_checkmate = checkmate?(move_a)
-      move_a[4] = :'#' if is_checkmate
-      moves_log.push(move_a)
-      players.reverse!
+      play_turn
     end
-    pretty_print
     puts "CHECKMATE!\n#{act_player} wins!"
   end
 
+  def find_act_player
+    # returns [@act_player, @opp_player]
+    case moves_log.length % 2
+    when 0 then [@player_white, @player_black]
+    when 1 then [@player_black, @player_white]
+    end
+  end
+
+  def move_from_user
+    print "Turn of #{act_player}:"
+    move = gets.chomp
+    if move == 's'
+      save_game
+      raise 'Game saved successfully'
+    end
+    move
+  end
+
+  def play_turn(move_a = nil)
+    @act_player, @opp_player = find_act_player
+    is_piece_moved = false
+    begin
+      move_a = decode_move(move_from_user) if move_a.nil?
+      check_validity_1(move_a)
+      kill_piece_if_any(move_a)
+      move_piece(move_a)
+      is_piece_moved = true
+      check_validity_2
+    rescue StandardError => e
+      puts e.message
+      undo(move_a) if is_piece_moved
+      move_a = nil
+      retry
+    end
+    give_check_if_applies(move_a)
+    @is_checkmate = checkmate?(move_a)
+    move_a[4] = :'#' if @is_checkmate
+    moves_log.push(move_a)
+  end
+
   def pretty_print
+    puts "Enter 's' to save game"
     puts ' '
     board_h.each do |square, piece|
       print piece ? piece.symbol : '_'         # square
@@ -71,8 +101,6 @@ example: input 'e2e4' to move the pawn",
   end
 
   def decode_move(move)
-    save_game if move == 's'
-
     square_from = move[0..1].split('')
     square_to = move[2..3].split('')
 
@@ -86,7 +114,6 @@ example: input 'e2e4' to move the pawn",
 
   def check_validity_1(move_a)
     move_a in [piece, square_from, _, square_to, _]
-
     error_no =
       case
       when !(square_valid?(square_from) && square_valid?(square_to)) then 1
@@ -100,7 +127,7 @@ example: input 'e2e4' to move the pawn",
       else 5
       end
 
-    raise ERROR_MESSAGES[error_no]
+    raise "Invalid input! #{ERROR_MESSAGES[error_no]}\nEnter again!"
   end
 
   def kill_piece_if_any(move_a)
@@ -262,32 +289,36 @@ example: input 'e2e4' to move the pawn",
     Dir.mkdir('save') unless Dir.exist?('save')
     puts 'Rename your save file:'
     filename = gets.chomp.downcase
-    File.open("save/#{filename}.yml", 'w') { |file| file.write(to_yaml) }
-    raise 'Game saved successfully!'
+    moves_log_to_yaml = YAML.dump({ moves_log: moves_log })
+    File.open("save/#{filename}.yml", 'w') { |file| file.write(moves_log_to_yaml) }
   end
 
-  def to_yaml
-    YAML.dump({
-                board_h: board_h,
-                player_white: player_white,
-                player_black: player_black,
-                act_player: act_player,
-                opp_player: opp_player,
-                moves_log: moves_log
-              })
+  def load_game
+    filename = take_filename_from_user
+    data = YAML.load_file filename
+    loaded_moves_log = data[:moves_log]
+    loaded_moves_log.each { |move_a| play_turn(move_a) }
   end
 
-  def self.from_yaml(string)
-    data = YAML.load string
-    p data
-    game = new
-    game.board_h = data[:board_h]
-    game.player_white = data[:player_white]
-    game.player_black = data[:player_black]
-    game.act_player = data[:act_player]
-    game.opp_player = data[:opp_player]
-    game.moves_log = data[:moves_log]
+  def take_filename_from_user
+    files_list = Dir.glob('save/*.yml') # Lists all save files, stores in array
 
-    game
+    # print files_list
+    puts "\nSave files:\n"
+    files_list.each_with_index do |filename, ind|
+      filename = filename.sub('save/', '').sub('.yml', '')
+      puts "#{ind}. #{filename}"
+    end
+
+    # get user input & load respective game from yml file
+    begin
+      puts "\nPress the number to select: "
+      ind = gets.chomp.to_i
+      filename = files_list[ind]
+    rescue StandardError
+      puts 'Incorrect entry. Please select a valid index number of save file :'
+      retry
+    end
+    filename
   end
 end

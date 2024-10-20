@@ -1,3 +1,4 @@
+require 'yaml'
 require_relative 'player'
 require_relative 'attack_map'
 class Board
@@ -38,7 +39,7 @@ example: input 'e2e4' to move the pawn",
       pretty_print
       begin
         print "Turn of #{act_player}:"
-        move_a = decode_move(gets)
+        move_a = decode_move(gets.chomp)
         check_validity_1(move_a)
         kill_piece_if_any(move_a)
         move_piece(move_a)
@@ -70,6 +71,8 @@ example: input 'e2e4' to move the pawn",
   end
 
   def decode_move(move)
+    save_game if move == 's'
+
     square_from = move[0..1].split('')
     square_to = move[2..3].split('')
 
@@ -253,5 +256,38 @@ example: input 'e2e4' to move the pawn",
     undo(esc_move)
     @act_player, @opp_player = @opp_player, @act_player
     is_king_exposed
+  end
+
+  def save_game
+    Dir.mkdir('save') unless Dir.exist?('save')
+    puts 'Rename your save file:'
+    filename = gets.chomp.downcase
+    File.open("save/#{filename}.yml", 'w') { |file| file.write(to_yaml) }
+    raise 'Game saved successfully!'
+  end
+
+  def to_yaml
+    YAML.dump({
+                board_h: board_h,
+                player_white: player_white,
+                player_black: player_black,
+                act_player: act_player,
+                opp_player: opp_player,
+                moves_log: moves_log
+              })
+  end
+
+  def self.from_yaml(string)
+    data = YAML.load string
+    p data
+    game = new
+    game.board_h = data[:board_h]
+    game.player_white = data[:player_white]
+    game.player_black = data[:player_black]
+    game.act_player = data[:act_player]
+    game.opp_player = data[:opp_player]
+    game.moves_log = data[:moves_log]
+
+    game
   end
 end
